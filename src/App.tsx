@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { generateGreetingText, editImageToGhibli } from './lib/gemini';
-import { Upload, Download, RefreshCw, Send, Image as ImageIcon, Sparkles, Check, ChevronDown, ArrowUpDown, Type, Key, X } from 'lucide-react';
+import { generateGreetingText, editImageWithStyle } from './lib/gemini';
+import { Upload, Download, RefreshCw, Send, Image as ImageIcon, Sparkles, Check, ChevronDown, ArrowUpDown, Type, Key, X, Palette } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -16,6 +16,18 @@ const MODES = [
   { id: 'positive', label: '每日正能量', emoji: '☀️' }
 ];
 
+const ART_STYLES = [
+  { id: 'original', label: '原圖', emoji: '📸' },
+  { id: 'ghibli', label: '吉卜力', emoji: '🍃' },
+  { id: 'watercolor', label: '水彩', emoji: '🎨' },
+  { id: 'oil_painting', label: '油畫', emoji: '🖼️' },
+  { id: 'cyberpunk', label: '賽博龐克', emoji: '🌃' },
+  { id: 'anime', label: '日系動漫', emoji: '🌸' },
+  { id: 'ink', label: '水墨畫', emoji: '🖌️' },
+  { id: '3d_pixar', label: '3D 動畫', emoji: '🧸' },
+  { id: 'none', label: '原圖美化', emoji: '✨' },
+];
+
 function getTimeOfDay(): string {
   const hour = new Date().getHours();
   if(hour >= 5 && hour < 11) return '早安';
@@ -27,6 +39,7 @@ function getTimeOfDay(): string {
 export default function App() {
   const [appState, setAppState] = useState<ProcessState>('IDLE');
   const [mode, setMode] = useState('normal');
+  const [artStyle, setArtStyle] = useState('ghibli');
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [greetingText, setGreetingText] = useState<string>('');
@@ -126,13 +139,17 @@ export default function App() {
   const startGeneration = async (base64Img: string) => {
     setAppState('GENERATING');
     try {
-      setStatusMessage('✨ 正在以 AI 吉卜力魔法渲染圖片...');
+      setStatusMessage('✨ 正在以 AI 魔法渲染圖片...');
       
-      // Start both promises
-      const imgPromise = editImageToGhibli(base64Img);
       const textPromise = generateGreetingText(timeOfDay, mode);
       
-      const newImg = await imgPromise;
+      let newImg;
+      if (artStyle === 'original') {
+        newImg = base64Img;
+      } else {
+        newImg = await editImageWithStyle(base64Img, artStyle);
+      }
+      
       setGeneratedImage(newImg);
       
       setStatusMessage('✍️ 正在為您撰寫溫暖問候語...');
@@ -370,23 +387,66 @@ export default function App() {
           >
             <span className="text-3xl">☕</span>
           </motion.div>
-          <h1 className="text-3xl font-bold tracking-wider text-[#2D2D2A] serif-title">暖心長輩圖 AI</h1>
-          <p className="text-[#5A5A40] text-sm mt-1">一秒將照片變成吉卜力風格動畫</p>
+          <h1 className="text-3xl font-bold tracking-wider text-[#2D2D2A] serif-title mb-2">暖心長輩圖 AI</h1>
         </header>
 
         {appState === 'IDLE' && (
           <motion.div 
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col space-y-6"
+            className="flex flex-col space-y-4"
           >
+            {/* Art Style selection */}
+            <details className="bg-white rounded-[32px] p-5 shadow-sm border border-[#E0D9D1] group" open>
+              <summary className="font-bold text-lg flex items-center justify-between text-[#2D2D2A] select-none cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center">
+                  <Palette size={18} className="mr-2 text-[#5A5A40]"/> 選擇藝術風格
+                  <span className="ml-3 text-sm font-normal text-[#5A5A40] opacity-80 group-open:hidden">
+                    {ART_STYLES.find(s => s.id === artStyle)?.label}
+                  </span>
+                </div>
+                <ChevronDown size={20} className="text-[#5A5A40] transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="grid grid-cols-4 gap-2 mt-4 cursor-default">
+                {ART_STYLES.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setArtStyle(s.id);
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-2 rounded-2xl transition-all border",
+                      artStyle === s.id 
+                        ? "bg-[#5A5A40] text-white border-[#5A5A40] shadow-md" 
+                        : "bg-[#FAF7F2] border-[#E0D9D1] text-[#5A5A40] hover:bg-white"
+                    )}
+                  >
+                    <span className="text-2xl mb-1">{s.emoji}</span>
+                    <span className="text-xs font-medium whitespace-nowrap">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+
             {/* Mode selection */}
-            <div className="bg-white rounded-[32px] p-5 shadow-sm border border-[#E0D9D1]">
-              <h2 className="font-bold text-lg mb-4 flex items-center text-[#2D2D2A]"><Sparkles size={18} className="mr-2 text-[#5A5A40]"/> 選擇祝福風格</h2>
-              <div className="flex flex-wrap gap-2">
+            <details className="bg-white rounded-[32px] p-5 shadow-sm border border-[#E0D9D1] group" open>
+              <summary className="font-bold text-lg flex items-center justify-between text-[#2D2D2A] select-none cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                <div className="flex items-center">
+                  <Sparkles size={18} className="mr-2 text-[#5A5A40]"/> 選擇祝福話語
+                  <span className="ml-3 text-sm font-normal text-[#5A5A40] opacity-80 group-open:hidden">
+                    {MODES.find(m => m.id === mode)?.label}
+                  </span>
+                </div>
+                <ChevronDown size={20} className="text-[#5A5A40] transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="flex flex-wrap gap-2 mt-4 cursor-default">
                 {MODES.map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => setMode(m.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setMode(m.id);
+                    }}
                     className={cn(
                       "flex items-center px-4 py-2 rounded-full text-left transition-all",
                       mode === m.id 
@@ -399,7 +459,7 @@ export default function App() {
                   </button>
                 ))}
               </div>
-            </div>
+            </details>
 
             {/* Upload Button */}
             <div className="flex-1 flex flex-col justify-end pb-8">
