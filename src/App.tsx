@@ -156,12 +156,31 @@ export default function App() {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => {
-        // Set canvas to a standard resolution that is good for sharing (max 1080)
-        const scale = Math.min(1080 / img.width, 1080 / img.height, 1);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
+        // Target aspect ratio for LINE sharing (4:5 like the preview)
+        const TARGET_RATIO = 4 / 5;
+        const imgRatio = img.width / img.height;
         
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        let sWidth = img.width;
+        let sHeight = img.height;
+        let sx = 0;
+        let sy = 0;
+
+        if (imgRatio > TARGET_RATIO) {
+          // Image is wider than 4:5, crop horizontal
+          sWidth = img.height * TARGET_RATIO;
+          sx = (img.width - sWidth) / 2;
+        } else {
+          // Image is taller than 4:5, crop vertical
+          sHeight = img.width / TARGET_RATIO;
+          sy = (img.height - sHeight) / 2;
+        }
+
+        // Output dimensions, max 1080 height for good quality
+        const scale = Math.min(1080 / sHeight, 1);
+        canvas.height = sHeight * scale;
+        canvas.width = canvas.height * TARGET_RATIO;
+        
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
 
         // Styling for text overlay matching the new UI (elder-text-shadow)
         let baseFontSize = Math.max(56, Math.floor(canvas.height / 12));
