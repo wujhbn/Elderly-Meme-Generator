@@ -1,6 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI(): GoogleGenAI {
+  if (!aiInstance) {
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) {
+      throw new Error("找不到 GEMINI_API_KEY。如果您部署在 Vercel，請確認有在專案設定中加入環境變數並重新部署。");
+    }
+    aiInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return aiInstance;
+}
 
 export async function generateGreetingText(timeOfDay: string, mode: string) {
   let modePrompt = "";
@@ -25,6 +36,7 @@ export async function generateGreetingText(timeOfDay: string, mode: string) {
 請直接回覆這句話就好，不要有任何其他解釋或引號。回覆如果有兩句可以用換行分隔。`;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
       contents: prompt,
@@ -33,8 +45,11 @@ export async function generateGreetingText(timeOfDay: string, mode: string) {
       }
     });
     return response.text?.trim() || "早安～ 祝您平安順心 \n的天天開心！";
-  } catch (e) {
+  } catch (e: any) {
     console.error(e);
+    if (e.message.includes("GEMINI_API_KEY")) {
+      alert(e.message);
+    }
     return "早安～ 願您天天都有好心情 🙏"; // Fallback
   }
 }
@@ -47,6 +62,7 @@ export async function editImageToGhibli(base64ImageStr: string) {
   const mimeType = match[1];
   const base64Data = match[2];
 
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
