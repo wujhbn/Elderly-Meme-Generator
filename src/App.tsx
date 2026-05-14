@@ -253,19 +253,16 @@ export default function App() {
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({
               files: [file],
-              title: greetingText.split('\n')[0],
-              text: '早安你好！這是我用 AI 做的吉卜力長輩圖喔 ☀️',
             });
           } else {
-             // Fallback
-             window.location.href = `line://msg/text/?${encodeURIComponent(greetingText)}`;
+             // Fallback if sharing files is not supported (this might just be text, but we shouldn't send text if user didn't want it, maybe tell them to download instead)
+             alert('您的裝置無法直接分享圖片，請先下載圖片後再傳送到 LINE。');
           }
         }
       }, 'image/jpeg', 0.9);
     } catch (e) {
       console.error(e);
-      // Fallback
-      window.location.href = `line://msg/text/?${encodeURIComponent(greetingText)}`;
+      alert('分享失敗，請先下載圖片後再傳送到 LINE。');
     }
   };
 
