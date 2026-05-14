@@ -1,15 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 
 let aiInstance: GoogleGenAI | null = null;
+let currentKey: string | null = null;
 
 function getAI(): GoogleGenAI {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("找不到 GEMINI_API_KEY。如果您部署在 Vercel，請確認有在專案設定中加入環境變數並重新部署。");
-    }
-    aiInstance = new GoogleGenAI({ apiKey: key });
+  const userKey = localStorage.getItem('gemini_api_key');
+  const envKey = process.env.GEMINI_API_KEY;
+  const keyToUse = userKey || envKey;
+
+  if (!keyToUse) {
+    throw new Error("找不到 GEMINI_API_KEY。請點擊上方設定按鈕輸入您的 API 金鑰。");
   }
+
+  // Reuse instance if key hasn't changed
+  if (aiInstance && currentKey === keyToUse) {
+    return aiInstance;
+  }
+
+  currentKey = keyToUse;
+  aiInstance = new GoogleGenAI({ apiKey: keyToUse });
   return aiInstance;
 }
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { generateGreetingText, editImageToGhibli } from './lib/gemini';
-import { Upload, Download, RefreshCw, Send, Image as ImageIcon, Sparkles, Check, ChevronDown, ArrowUpDown, Type } from 'lucide-react';
+import { Upload, Download, RefreshCw, Send, Image as ImageIcon, Sparkles, Check, ChevronDown, ArrowUpDown, Type, Key, X } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -36,6 +36,8 @@ export default function App() {
   const [textPosition, setTextPosition] = useState<'top' | 'bottom'>('bottom');
   const [textSize, setTextSize] = useState<'large' | 'medium' | 'small'>('large');
   const [textFont, setTextFont] = useState<'BiauKai' | 'Kaiti TC' | 'Noto Serif TC'>('BiauKai');
+  const [showKeyDialog, setShowKeyDialog] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const FONT_MAP = {
@@ -54,6 +56,12 @@ export default function App() {
     
     // Update time of day on mount
     setTimeOfDay(getTimeOfDay());
+    
+    // Load saved API key
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) {
+      setApiKeyInput(savedKey);
+    }
   }, []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,6 +98,15 @@ export default function App() {
       img.src = result;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      localStorage.setItem('gemini_api_key', apiKeyInput.trim());
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
+    setShowKeyDialog(false);
   };
 
   const startGeneration = async (base64Img: string) => {
@@ -256,8 +273,60 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {showKeyDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[32px] w-full max-w-sm p-6 shadow-2xl"
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Key size={20} className="text-[#5A5A40]" />
+                  API 金鑰設定
+                </h2>
+                <button onClick={() => setShowKeyDialog(false)} className="p-2 text-gray-400 hover:text-gray-800 transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                為讓此工具可在您的個人環境運行，您可以填寫自己的 Gemini API Key。金鑰只會保存在您的瀏覽器中。
+              </p>
+              <input 
+                type="password" 
+                placeholder="AIzaSy..." 
+                value={apiKeyInput}
+                onChange={(e) => setApiKeyInput(e.target.value)}
+                className="w-full border-2 border-[#E0D9D1] rounded-2xl p-4 mb-4 focus:outline-none focus:border-[#5A5A40] transition-colors"
+              />
+              <button 
+                onClick={handleSaveApiKey}
+                className="w-full bg-[#5A5A40] text-white font-bold py-4 rounded-2xl active:scale-95 transition-transform"
+              >
+                儲存設定
+              </button>
+              <div className="mt-4 text-center">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">
+                  取得 Gemini API Key
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="max-w-md mx-auto w-full px-5 py-6 flex flex-col space-y-6 relative">
-        <header className="flex flex-col items-center justify-center pt-4 pb-2">
+        <header className="flex flex-col items-center justify-center pt-4 pb-2 relative">
+          <button 
+            onClick={() => setShowKeyDialog(true)}
+            className="absolute top-2 right-0 p-2 text-[#5A5A40]/60 hover:text-[#5A5A40] transition-colors bg-white rounded-full shadow-sm border border-[#E0D9D1]"
+            aria-label="設定 API 金鑰"
+          >
+            <Key size={20} />
+          </button>
+          
           <motion.div 
             initial={{ scale: 0.9 }} animate={{ scale: 1 }}
             className="w-16 h-16 bg-white rounded-3xl shadow-sm flex items-center justify-center mb-3 border border-[#E0D9D1]"
