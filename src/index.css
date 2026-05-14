@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap');
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.safe-area-pt {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-area-pb {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 16px);
+}
+
+.serif-title {
+  font-family: 'Georgia', 'Noto Serif TC', serif;
+}
+
+.elder-greeting-font {
+  font-family: "標楷體", BiauKai, "Kaiti TC", "STKaiti", "Noto Serif TC", serif;
+}
+
+.elder-text-shadow {
+  text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff, 2px -2px 0px #fff, -2px 2px 0px #fff, 0px 4px 10px rgba(0,0,0,0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}

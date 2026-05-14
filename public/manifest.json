@@ -1,0 +1,17 @@
+{
+  "name": "暖心長輩圖",
+  "short_name": "暖心長輩圖",
+  "description": "一鍵將照片轉換為吉卜力風格的溫暖長輩問候圖",
+  "start_url": "./?source=pwa",
+  "display": "standalone",
+  "background_color": "#FCFBF4",
+  "theme_color": "#FCFBF4",
+  "icons": [
+    {
+      "src": "icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
