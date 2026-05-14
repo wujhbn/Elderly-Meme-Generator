@@ -75,21 +75,35 @@ export default function App() {
       
       const img = new Image();
       img.onload = async () => {
-        const MAX_DIM = 1024;
-        let { width, height } = img;
-        
-        if (width > MAX_DIM || height > MAX_DIM) {
-          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
+        // Target 4:5 aspect ratio for mobile format
+        const TARGET_RATIO = 4 / 5;
+        let sWidth = img.width;
+        let sHeight = img.height;
+        let sx = 0;
+        let sy = 0;
+
+        const imgRatio = img.width / img.height;
+        if (imgRatio > TARGET_RATIO) {
+          // Image is wider, crop horizontal
+          sWidth = img.height * TARGET_RATIO;
+          sx = (img.width - sWidth) / 2;
+        } else {
+          // Image is taller, crop vertical
+          sHeight = img.width / TARGET_RATIO;
+          sy = (img.height - sHeight) / 2;
         }
 
+        const MAX_WIDTH = 1080;
+        const scale = Math.min(MAX_WIDTH / sWidth, 1);
+        const dWidth = Math.round(sWidth * scale);
+        const dHeight = Math.round(sHeight * scale);
+
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = dWidth;
+        canvas.height = dHeight;
         const ctx = canvas.getContext('2d');
         if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
+          ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, dWidth, dHeight);
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
           setOriginalImage(compressedBase64);
           await startGeneration(compressedBase64);
