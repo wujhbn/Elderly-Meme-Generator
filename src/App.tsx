@@ -156,33 +156,14 @@ export default function App() {
       const img = new Image();
       img.crossOrigin = "Anonymous";
       img.onload = () => {
-        // Target aspect ratio for LINE sharing (4:5 like the preview)
-        const TARGET_RATIO = 4 / 5;
-        const imgRatio = img.width / img.height;
+        // Output dimensions, max 1080 width or height for good quality, maintaining original aspect ratio
+        const scale = Math.min(1080 / img.width, 1080 / img.height, 1);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
         
-        let sWidth = img.width;
-        let sHeight = img.height;
-        let sx = 0;
-        let sy = 0;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        if (imgRatio > TARGET_RATIO) {
-          // Image is wider than 4:5, crop horizontal
-          sWidth = img.height * TARGET_RATIO;
-          sx = (img.width - sWidth) / 2;
-        } else {
-          // Image is taller than 4:5, crop vertical
-          sHeight = img.width / TARGET_RATIO;
-          sy = (img.height - sHeight) / 2;
-        }
-
-        // Output dimensions, max 1080 height for good quality
-        const scale = Math.min(1080 / sHeight, 1);
-        canvas.height = sHeight * scale;
-        canvas.width = canvas.height * TARGET_RATIO;
-        
-        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvas.width, canvas.height);
-
-        // Styling for text overlay matching the new UI (elder-text-shadow)
+        // Text configuration
         let baseFontSize = Math.max(56, Math.floor(canvas.height / 12));
         if (textSize === 'medium') baseFontSize = Math.max(46, Math.floor(canvas.height / 14));
         if (textSize === 'small') baseFontSize = Math.max(36, Math.floor(canvas.height / 18));
@@ -190,38 +171,64 @@ export default function App() {
         ctx.font = `900 ${fontSize}px ${FONT_MAP[textFont]}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        
-        const lines = greetingText.split('\n');
-        const lineHeight = fontSize * 1.5;
+
+        // Implement text wrapping
+        const wrapText = (text: string, maxWidth: number) => {
+          const paragraphs = text.split('\n');
+          const finalLines: string[] = [];
+          
+          for (let p = 0; p < paragraphs.length; p++) {
+            let line = '';
+            for (let i = 0; i < paragraphs[p].length; i++) {
+              const char = paragraphs[p][i];
+              const testLine = line + char;
+              const metrics = ctx.measureText(testLine);
+              if (metrics.width > maxWidth && line.length > 0) {
+                finalLines.push(line);
+                line = char;
+              } else {
+                line = testLine;
+              }
+            }
+            finalLines.push(line);
+          }
+          return finalLines;
+        };
+
+        const maxWidth = canvas.width * 0.9; // 90% width
+        const lines = wrapText(greetingText, maxWidth);
+        const lineHeight = fontSize * 1.4;
         const totalHeight = lines.length * lineHeight;
         
+        // Calculate starting Y position
         let initialY = 0;
         if (textPosition === 'bottom') {
-          initialY = canvas.height - Math.max(canvas.height * 0.12, 60) - totalHeight + lineHeight;
+          initialY = canvas.height - Math.max(canvas.height * 0.08, 40) - totalHeight + (lineHeight / 2);
         } else {
-          initialY = Math.max(canvas.height * 0.12, 80) + (lineHeight / 2);
+          initialY = Math.max(canvas.height * 0.08, 60) + (lineHeight / 2);
         }
         
         lines.forEach((line, i) => {
            const x = canvas.width / 2;
            const y = initialY + i * lineHeight;
            
-           // Drop shadow & White Stroke approximation
-           ctx.shadowColor = "rgba(0,0,0,0.2)";
-           ctx.shadowBlur = 10;
+           // Drop shadow & First Stroke
+           ctx.shadowColor = "rgba(0,0,0,0.3)";
+           ctx.shadowBlur = 12;
            ctx.shadowOffsetX = 0;
-           ctx.shadowOffsetY = 4;
+           ctx.shadowOffsetY = 6;
            
            ctx.strokeStyle = "#ffffff";
-           ctx.lineWidth = fontSize * 0.15;
+           ctx.lineWidth = fontSize * 0.2; // Thicker stroke for elder style
            ctx.lineJoin = "round";
            ctx.strokeText(line, x, y);
            
-           // Clear shadow for main fill
+           // Second stroke to ensure solid white border without shadow bleeding
            ctx.shadowColor = "transparent";
            ctx.shadowBlur = 0;
            ctx.shadowOffsetX = 0;
            ctx.shadowOffsetY = 0;
+           ctx.strokeText(line, x, y);
            
            ctx.fillStyle = "#FF6B6B"; // Match the generated text color
            ctx.fillText(line, x, y);
@@ -431,8 +438,8 @@ export default function App() {
             className="flex flex-col space-y-5"
           >
             {/* The Image Preview inside App UI */}
-            <div className="w-full relative rounded-3xl overflow-hidden shadow-lg aspect-[4/5] bg-[#F0EBE3] border border-[#E0D9D1]">
-              <img src={generatedImage} alt="Generated" className="w-full h-full object-cover" />
+            <div className="w-full relative rounded-3xl overflow-hidden shadow-lg bg-[#F0EBE3] border border-[#E0D9D1]">
+              <img src={generatedImage} alt="Generated" className="w-full h-auto block" />
               
               <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
                 <button
